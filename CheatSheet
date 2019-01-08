@@ -1,0 +1,37 @@
+Keywords
+
+this, virtual function, pure virtual function, overloading, threads (mutex, blah blah), register
+
+static - stores in a permanent spot in storage, specifically on the heap
+
+explicit - only use constructors when they match
+
+const - immutable, once it is instantiated, it remains throughout run
+
+constexpr - given value at compile time
+
+modularization - have different functions split up
+
+polymorphism - over ride functionality when inheriting, functions can use other parameters - overriding
+
+protected class - available to any sub-class derived from base
+
+abstract - a class used as a base that other classes can extend to use their functions
+
+encapsulation - an object that has data and functions all together
+
+inheretance - class can inheret class base
+
+Questions
+
+Why use C?
+*resource constraints
+*it provides low level & middle level
+*control how and when to allocate and deallocate memory
+*memory management
+*C dynamic memory allocation
+*C++ includes this with new and delete -> memory leaks * logical errors of demalloc twice
+
+Stack vs Heap?
+*Stack -> static memory allocation, fast, 1 per thread (int a = new int())
+*Heap -> dynamic, slow, shared (int a;)
