@@ -1,0 +1,19 @@
+#!/bin/bash
+
+STRING="Which fucking thang you trynna turn off, yo?"
+
+xinput list
+
+xinputNum=$(xinput --list | grep "Stick" | sed -n 's/.*id=\([0-9]\+\).*/\1/p')
+
+echo "Turning off device at id=$xinputNum"
+
+#echo $STRING
+#read xinputNum
+
+xinput list-props $xinputNum
+xinput set-prop $xinputNum 158 0
+xinput list-props $xinputNum
+
+
+echo "Touchstick Disabled."
