@@ -1,0 +1,21 @@
+#!/bin/bash
+
+read location1
+
+echo If first file is remote, input user@host. Else type local: $location1
+
+read file1
+
+echo Input first file location: $file1
+
+read location2
+
+echo If second file is remote, input user@host. Else type local: $location2
+
+read file2
+
+echo Input first file location: $file2
+
+
+
+diff local_file <(ssh user@server 'cat remote_file')
