@@ -1,0 +1,59 @@
+#! /bin/sh
+
+echo -e "**************************************************"
+echo -e "*              Updating repositories             *"
+echo -e "**************************************************"
+
+sudo apt update
+
+echo -e ".................................................."
+echo -e ".             Upgrading repositories             ."
+echo -e ".................................................."
+
+sudo apt -y upgrade
+
+echo -e ".................................................."
+echo -e ".                 Auto Cleanup                   ."
+echo -e ".................................................."
+
+sudo apt -y autoclean && sudo apt -y autoremove && sudo apt -y autopurge
+
+echo -e ".................................................."
+echo -e ".                 Upgrade Dist                   ."
+echo -e ".................................................."
+
+sudo apt dist-upgrade
+
+echo -e ".................................................."
+echo -e ".                 Auto Cleanup                   ."
+echo -e ".................................................."
+
+sudo apt -y autoclean && sudo apt -y autoremove && sudo apt -y autopurge
+
+
+echo -e "**************************************************"
+echo -e "*              Updating repositories             *"
+echo -e "**************************************************"
+
+sudo apt update
+
+echo -e ".................................................."
+echo -e ".             Upgrading repositories             ."
+echo -e ".................................................."
+
+sudo apt -y upgrade
+
+echo -e ".................................................."
+echo -e ".                 Auto Cleanup                   ."
+echo -e ".................................................."
+
+sudo apt -y autoclean && sudo apt -y autoremove && sudo apt -y autopurge
+
+
+echo -e ".................................................."
+echo -e ".                     Done                       ."
+echo -e ".................................................."
+
+
+echo -e
+echo -e
