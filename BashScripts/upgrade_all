@@ -22,7 +22,7 @@ echo -e ".................................................."
 echo -e ".                 Upgrade Dist                   ."
 echo -e ".................................................."
 
-sudo apt dist-upgrade
+sudo apt -y dist-upgrade
 
 echo -e ".................................................."
 echo -e ".                 Auto Cleanup                   ."
