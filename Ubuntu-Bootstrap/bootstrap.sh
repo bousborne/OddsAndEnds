@@ -66,6 +66,13 @@ sudo apt build-dep -y ./google-chrome-stable_current_amd64.deb
 sudo apt install -y ./google-chrome-stable_current_amd64.deb
 rm google-chrome-stable_current_amd64.deb
 
+# Python setup
+echo -e ".................................................."
+echo -e ".                Install Python                  ."
+echo -e ".................................................."
+sudo apt install -y python3
+sudo apt install -y python3-pip
+
 # Docker setup - https://docs.docker.com/engine/install/ubuntu/
 echo -e ".................................................."
 echo -e ".                Install Docker                  ."
@@ -158,6 +165,7 @@ code --install-extension ms-dotnettools.csharp
 code --install-extension golang.go
 code --install-extension dbaeumer.vscode-eslint
 code --install-extension HookyQR.beautify
+code --install-extension ms-python.python
 code --list-extensions
 # git setup:
 git config --global user.email "bousborne@pivot3.com"
