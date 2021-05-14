@@ -18,9 +18,10 @@ fi
 # Add stuff to bash.rc
 # Config tmuxinator and tmux
 
-echo -e "**************************************************"
-echo -e "*              Updating repositories             *"
-echo -e "**************************************************"
+# Update, Upgrade, and Clean up
+echo -e ".................................................."
+echo -e ".              Updating repositories             ."
+echo -e ".................................................."
 
 sudo apt -y update
 
@@ -34,7 +35,8 @@ echo -e ".................................................."
 echo -e ".                 Auto Cleanup                   ."
 echo -e ".................................................."
 
-sudo apt -y autoclean && sudo apt -y autoremove
+sudo apt -y autoclean
+sudo apt -y autoremove
 
 echo -e ".................................................."
 echo -e ".                 Upgrade Dist                   ."
@@ -46,16 +48,26 @@ echo -e ".................................................."
 echo -e ".                 Auto Cleanup                   ."
 echo -e ".................................................."
 
-sudo apt -y autoclean && sudo apt -y autoremove
+sudo apt -y autoclean
+sudo apt -y autoremove
 
+# Essential installs
 echo -e ".................................................."
 echo -e ".              Install Essentials                ."
 echo -e ".................................................."
 
-echo "Some essentials..."
 sudo apt-get install -y curl wget git xclip vim tmux tmuxinator\
   apt-transport-https ca-certificates gnupg gnupg-agent build-essential \
   lsb-release software-properties-common ssh
+
+# Remote Access XRDP Setup
+echo -e ".................................................."
+echo -e ".             Remote Access Setup                ."
+echo -e ".................................................."
+
+sudo apt install -y xrdp
+sudo systemctl enable --now xrdp
+sudo ufw allow from any to any port 3389 proto tcp
 
 # Chrome setup
 echo -e ".................................................."
