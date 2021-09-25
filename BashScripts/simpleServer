@@ -1,0 +1,8 @@
+#!/bin/bash
+
+THISIP=$(ip route get 8.8.8.8 | sed  -nE '1{s/.*?src (\S+) .*/\1/;p}')
+
+echo "Running server at ${THISIP}:80"
+
+# python2 -m SimpleHTTPServer 80
+python3 -m http.server 80
