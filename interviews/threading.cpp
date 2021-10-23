@@ -1,3 +1,11 @@
+// /*
+
+// Write a program that takes a count and creates 2 threads. Each thread increments a global variable.
+// Thread 1 increments the global only if the global is odd, while thread 2 increments the global only if it is even.
+// The program terminates once the count reaches the value of the input.
+
+// */
+
 #include <iostream>
 #include <mutex>
 #include <thread>
