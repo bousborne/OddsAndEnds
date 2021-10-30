@@ -1,3 +1,14 @@
+# Ben Ousborne
+
+## Minor changes I made to stuff
+
+I added a '-t' to the docker run statement in run.sh. This will allocate a pseudo-TTY so that the linking of g++ can be made correctly.
+
+Tests are now added at the end of Dockerfile. They are ran using catch2. See Tests.cpp to view the actual tests ran.
+The result of these tests will be shown automatically when you run "./run.sh".
+They will be right above where you are able to input BUY/SELL lines.
+
+
 # engine-takehome-interview
 
 ## Prompt
