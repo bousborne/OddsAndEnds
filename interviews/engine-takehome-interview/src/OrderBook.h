@@ -4,6 +4,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <memory>
 #include "Order.h"
 #include "Trade.h"
 
@@ -17,18 +18,18 @@ class OrderBook {
     int quantity, price;
 
 public:
-    std::vector<Order*> buyList;
-    std::vector<Order*> sellList;
+    std::vector<std::shared_ptr<Order>> buyList;
+    std::vector<std::shared_ptr<Order>> sellList;
     std::vector<Trade*> tradeList;
 
     OrderBook() {};
     template<typename T> bool isBuy(T x);
-    void add(Order* order, bool buy);
+    void add(std::shared_ptr<Order>& order, bool buy);
     bool is_empty() const;
-    void add_buy(Order* order);
-    void add_sell(Order* order);
-    void match(Order* order);
-    void makeTrade( Order* buyerOrder, Order* sellerOrder, int price, int quantity);
+    void add_buy(std::shared_ptr<Order>& order);
+    void add_sell(std::shared_ptr<Order>& order);
+    void match(std::shared_ptr<Order>& order);
+    void makeTrade( std::shared_ptr<Order>& buyerOrder, std::shared_ptr<Order>& sellerOrder, int price, int quantity);
 
     friend std::ostream& operator<<(std::ostream& os, const OrderBook& orderBook);
 };

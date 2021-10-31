@@ -15,7 +15,7 @@ bool OrderProcessor::isBuy(T x) {
     return x->sSide == "BUY";
 }
 
-void OrderProcessor::processOrder(Order *order) {
+void OrderProcessor::processOrder(std::shared_ptr<Order>& order) {
     int matchQty = order->quantity;
     orderBook->match(order);
     if (matchQty > 0) {
@@ -39,24 +39,27 @@ int OrderProcessor::run(const std::string &filename) {
         if (!line.empty()) {
             for (std::string each; std::getline(split, each, split_char); tokens.push_back(each)); //NOLINT
         }
-
+        bool validOrder = true;
         if (tokens.size() != 5) {
             std::cout << "Input: '" << line << "' is not valid: Not correct number of values.\n";
 //            continue;
+            validOrder = false;
         } else {
             if (!isNumber(tokens[3])) {
                 std::cout << "Input: '" << line << "' is not valid. Quantity is not a number.\n";
-//                continue;
+                validOrder = false;
             }
 
             if (!isNumber(tokens[4])) {
                 std::cout << "Input: '" << line << "' is not valid. Price is not a number.\n";
-//                continue;
+                validOrder = false;
             }
         }
-        Order *order = new Order(tokens[0], tokens[1], tokens[2], stoi(tokens[3]), stoi(tokens[4]), order_time);
-        processOrder(order);
-        delete order;
+        if (validOrder) {
+            std::shared_ptr <Order> order(
+                    new Order(tokens[0], tokens[1], tokens[2], stoi(tokens[3]), stoi(tokens[4]), order_time));
+            processOrder(order);
+        }
     }
     std::cout << *orderBook << std::endl;
     return 0;

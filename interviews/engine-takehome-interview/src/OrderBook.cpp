@@ -9,15 +9,15 @@ bool OrderBook::is_empty() const {
     return (buyList.empty() || sellList.empty());
 }
 
-void OrderBook::add_buy(Order* order) {
+void OrderBook::add_buy(std::shared_ptr<Order>& order) {
     add(order, true);
 }
 
-void OrderBook::add_sell(Order* order) {
+void OrderBook::add_sell(std::shared_ptr<Order>& order) {
     add(order, false);
 }
 
-void OrderBook::add(Order* order, bool buy) {
+void OrderBook::add(std::shared_ptr<Order>& order, bool buy) {
     if (buy) {
         buyList.push_back(order);
     } else {
@@ -25,9 +25,9 @@ void OrderBook::add(Order* order, bool buy) {
     }
 }
 
-void OrderBook::match( Order* order) {
+void OrderBook::match( std::shared_ptr<Order>& order) {
     if(isBuy(order)) {
-        std::vector<Order*>::iterator it;
+        std::vector<std::shared_ptr<Order>>::iterator it;
         for(it = sellList.begin(); it != sellList.end(); it++) {
             if ((order->sInstrument == (*it)->sInstrument) && (order->price >= (*it)->price) && ((*it)->quantity != 0)) {
                 makeTrade(order, (*it), order->price, MIN(order->quantity, (*it)->quantity));
@@ -36,7 +36,7 @@ void OrderBook::match( Order* order) {
         }
     }
     if(!isBuy(order)) {
-        std::vector<Order*>::iterator it;
+        std::vector<std::shared_ptr<Order>>::iterator it;
         for(it = buyList.begin(); it != buyList.end(); it++) {
             if ((order->sInstrument == (*it)->sInstrument) && (order->price <= (*it)->price) && ((*it)->quantity != 0)) {
                 makeTrade((*it), order, (*it)->price, MIN(order->quantity, (*it)->quantity));
@@ -46,12 +46,13 @@ void OrderBook::match( Order* order) {
     }
 }
 
-void OrderBook::makeTrade( Order* buyerOrder, Order* sellerOrder, int price, int quantity) {
+void OrderBook::makeTrade( std::shared_ptr<Order>& buyerOrder, std::shared_ptr<Order>& sellerOrder, int price, int quantity) {
     std::cout << "TRADE " << buyerOrder->sInstrument << " " << sellerOrder->orderId << " " << buyerOrder->orderId << " " << quantity << " " << price << std::endl;
-    Trade *trade = new Trade("TRADE", buyerOrder->sInstrument, buyerOrder->orderId, sellerOrder->orderId, price, quantity);
+    Trade *trade = new Trade("TRADE", buyerOrder->sInstrument, buyerOrder->orderId, sellerOrder->orderId, quantity, price);
     buyerOrder->quantity -= quantity;
     sellerOrder->quantity -= quantity;
     tradeList.push_back(trade);
+    delete trade;
 }
 
 std::ostream& operator<<(std::ostream& os, const OrderBook& book) {

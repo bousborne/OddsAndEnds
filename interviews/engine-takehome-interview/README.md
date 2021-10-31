@@ -1,5 +1,12 @@
 # Ben Ousborne
 
+## Quick Glance
+
+***./run.sh*** will compile everything and run the match engine using input.txt as the input.
+
+***./test.sh*** will compile everything and run just the tests through the build/match_engine_tests binary
+
+***./run_interactive.sh*** will compile everything and bring you into the interactive mode so you can enter the trad one at a time.
 ## Minor changes I made to stuff
 
 I added a '-t' to the docker run statement in run.sh. This will allocate a pseudo-TTY so that the linking of g++ can be made correctly.
@@ -7,6 +14,59 @@ I added a '-t' to the docker run statement in run.sh. This will allocate a pseud
 Tests are now added at the end of Dockerfile. They are ran using catch2. See Tests.cpp to view the actual tests ran.
 The result of these tests will be shown automatically when you run "./run.sh".
 They will be right above where you are able to input BUY/SELL lines.
+
+Running the "./run.sh" will also automatically run clang-tidy, clang-format, and valgrind.
+I used mostly smart pointers to avoid memory leaks.
+
+## How to run
+
+### Match Enginer
+The match_engine can either take an input file (which I called input.txt in the src folder), or it can take no input.
+With an input file, it will run the match engine on all lines in the file, while emitting trades.
+When it is done all lines, it will then print all remaining trade lines, then terminate the program.
+
+If you want to run it as a continuous program that allows you to individually type each line, run it without paramaters.
+To do so, comment out the line in docker file that says:
+
+ENTRYPOINT ["/app/build/./match_engine", "/app/input.txt"]
+
+And uncomment the line that says:
+
+ENTRYPOINT ["/app/build/./match_engine"]
+
+This was the easiest way to allow the dockerfile to pass parameters to the program.
+
+### Tests
+Simply running "./test.sh" on commandline will kick off docker and run the tests that are in Tests.cpp.
+The tests are ran using catch2.
+
+## Methodology
+
+The bulk of the code is in OrderProcessor.cpp and OrderBook.cpp.
+When main runs, it starts up the OrderProcessor which will wait for orders to come in, then run them through the matcher.
+There is a vector of buys and a vector of sells.
+If the current order is a buy, then it will compare to the sells vector and vice versa.
+When trying to match an order, it will loop through all orders currently in the respective vector list.
+It will make comparisons on the price, as well as make sure it is the same "instrument".
+If there is a match, the quantities of both sides will be updated, then the current order will be placed in its'
+respective vector list if there is still some quantity left.
+Being placed at the end takes care of the time precedent.
+At a match, a trade will be emitted.
+When everything is processed (either the file is at the end, or user types "exit"), then the sell and buy vector contents
+are printed as long as there is quantity left.
+
+I was trying real hard to think of a way to decrease time complexity.
+I was considering using a map, or set, or something along those lines for the sell and buy vectors to decrease lookup time.
+But, I could not think of a good key value, as using prices or instruments would write over previous objects.
+Therefore, I stuck with vectors.
+
+## Time
+
+I spent roughly 3 hours on this. The bulk of the developing the actual algorithm was about 1.5 hours.
+I got stuck on "how to implement using input parameters vs none" part.
+But, it can now be ran with either input.txt containing the lines, or with no paramaters for the user to type them.
+Then, I also spent a chunk of time figuring out how to pass the parameters into docker.
+This was acheived through the ENTRYPOINT lines in dockerfile with CMD overrides.
 
 
 # engine-takehome-interview
