@@ -2,42 +2,30 @@
 
 ## Quick Glance
 
-***./run.sh*** will compile everything and run the match engine using input.txt as the input.
-You can also pipe info into the run.sh script like so:
-
-***cat sample_input.txt | ./run.sh***
+***cat sample_input.txt | ./run.sh*** will compile everything and run the match engine using sample_input.txt as the input.
 
 ***./test.sh*** will compile everything and run just the tests through the build/match_engine_tests binary
 
-***./run_interactive.sh*** will compile everything and bring you into the interactive mode so you can enter the trad one at a time.
 ## Minor changes I made to stuff
-
-I added a '-t' to the docker run statement in run.sh. This will allocate a pseudo-TTY so that the linking of g++ can be made correctly.
 
 Tests are now added at the end of Dockerfile. They are ran using catch2. See Tests.cpp to view the actual tests ran.
 The result of these tests will be shown automatically when you run "./run.sh".
 They will be right above where you are able to input BUY/SELL lines.
 
 Running the "./run.sh" will also automatically run clang-tidy, clang-format, and valgrind.
-I used mostly smart pointers to avoid memory leaks.
 
 ## How to run
 
+***cat sample_input.txt | ./run.sh*** will compile everything and run the match engine using sample_input.txt as the input.
+
+***./test.sh*** will compile everything and run just the tests through the build/match_engine_tests binary
+
 ### Match Enginer
-The match_engine can either take an input file (which I called input.txt in the src folder), or it can take no input.
+The match_engine can either take a piped input file via 'cat', or it can take no input.
 With an input file, it will run the match engine on all lines in the file, while emitting trades.
 When it is done all lines, it will then print all remaining trade lines, then terminate the program.
 
-If you want to run it as a continuous program that allows you to individually type each line, run it without paramaters.
-To do so, comment out the line in docker file that says:
-
-ENTRYPOINT ["/app/build/./match_engine", "/app/input.txt"]
-
-And uncomment the line that says:
-
-ENTRYPOINT ["/app/build/./match_engine"]
-
-This was the easiest way to allow the dockerfile to pass parameters to the program.
+If you want to run it as a continuous program that allows you to individually type each line, run it without pipe.
 
 ### Tests
 Simply running "./test.sh" on commandline will kick off docker and run the tests that are in Tests.cpp.
@@ -63,6 +51,9 @@ I was trying real hard to think of a way to decrease time complexity.
 I was considering using a map, or set, or something along those lines for the sell and buy vectors to decrease lookup time.
 But, I could not think of a good key value, as using prices or instruments would write over previous objects.
 Therefore, I stuck with vectors.
+
+I also considered trees to decrease time complexity on lookup, but this is nullified from using 2 variables to sort on.
+So, I still stuck with vectors.
 
 ## Time
 

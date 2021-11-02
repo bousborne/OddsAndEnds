@@ -14,8 +14,6 @@ VALGRINDFLAGS=--leak-check=full \
               --errors-for-leak-kinds=definite \
               --show-leak-kinds=definite \
               --quiet
-              #			 $program \
-              #			 > temp.txt 2>&1
 %.o: %.c
 	$(CC) $(CFLAGS) -o $@ -c $<
 

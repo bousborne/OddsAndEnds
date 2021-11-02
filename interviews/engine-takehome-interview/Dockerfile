@@ -14,5 +14,3 @@ RUN cd /app && make clean && make build
 COPY src/runTests.sh /usr/local/bin/runTests.sh
 RUN chmod +x /usr/local/bin/runTests.sh
 ENTRYPOINT ["/app/build/./match_engine"]
-CMD ["/app/input.txt"]
-# ENTRYPOINT ["/app/build/./match_engine"]
