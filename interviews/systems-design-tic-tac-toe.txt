@@ -1,0 +1,49 @@
+You have been hired by TTT incorporated, a company that specialized in the best
+web version of tic-tac-toe available anywhere on the internet. Your a backend
+developer developing the servers that will serve the game. Players stats will be tracked and posted to an online leaderboard. you can challenge other top
+players and play in ranked games.
+
+1) Think about your API and Data Models, and write out some basic flows
+
+2) A new requirement comes in where users can modify the game. They can change
+the size of the board, add new players (X, O, #), and even create new arbitrary
+rules Ex. (if a token is on the board for more than 3 rounds, it can be
+replaced with a different token). How would you structure the datamodels and
+API's to allow this level of expansion?
+
+Class Rules
+    
+Class Player
+    userId
+    Losses
+    Wins
+    currentGameId
+
+Class Game
+    player1Id
+    player2Id
+    Vector player1Moves
+     Vector player2Moves
+    
+Class Board
+    boardId
+    sizeOfBoard
+    vector<string> plays
+
+
+API
+startNewGame(player->player1Id, player->player2Id) // returns make_pair(game, board)
+makeMove(curPlayer, curMove, board, game) // updates board, 
+      checkMove(board->plays, curMove) // Look through board->plays to see if it is valid, returns validness
+      If checkMove: makeMove(board->plays, curMove) // update the board
+      checkifWiner(board->plays) // looks for winner, returns status which includes winner or “NO_WINNER”
+
+      
+saveStats(player)
+     retrieveInfo(playerId) // check database for player, and get all info
+     updateInfo(player) // update info that was pulled from database
+     storeInfo(player->) // extract the indivi
+determineWinner
+
+ 
+
