@@ -15,6 +15,8 @@
 #include "Order.h"
 #include "Trade.h"
 
+#define TOKEN_SIZE 5
+
 using std::chrono::duration_cast;
 using std::chrono::milliseconds;
 using std::chrono::seconds;

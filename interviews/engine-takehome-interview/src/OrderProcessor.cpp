@@ -43,9 +43,8 @@ int OrderProcessor::run(const std::string &filename) {
             for (std::string each; std::getline(split, each, split_char); tokens.push_back(each)); //NOLINT
         }
         bool validOrder = true;
-        if (tokens.size() != 5) {
+        if (tokens.size() != TOKEN_SIZE) {
             std::cout << "Input: '" << line << "' is not valid: Not correct number of values.\n";
-//            continue;
             validOrder = false;
         } else {
             if (!isNumber(tokens[3])) {
@@ -65,7 +64,6 @@ int OrderProcessor::run(const std::string &filename) {
         }
     }
     orderBook->printRemaining();
-//    std::cout << *orderBook << std::endl;
     return 0;
 }
 

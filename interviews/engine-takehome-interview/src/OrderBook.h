@@ -21,7 +21,7 @@ class OrderBook {
 public:
     std::vector<std::shared_ptr<Order>> buyList;
     std::vector<std::shared_ptr<Order>> sellList;
-    std::vector<Trade*> tradeList;
+    std::vector<std::shared_ptr<Trade>> tradeList;
 
     OrderBook() {};
     template<typename T> bool isBuy(T x);

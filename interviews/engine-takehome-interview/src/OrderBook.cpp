@@ -10,14 +10,16 @@ bool OrderBook::isEmpty() const {
 }
 
 bool OrderBook::sellSortCompare(const std::shared_ptr<Order>& order1, const std::shared_ptr<Order>& order2) {
-    if( order1->price != order2->price)
+    if(order1->price != order2->price) {
         return (order1->price < order2->price);
+    }
     return (order1->orderTime < order2->orderTime);
 }
 
 bool OrderBook::buySortCompare(const std::shared_ptr<Order>& order1, const std::shared_ptr<Order>& order2) {
-    if( order1->price != order2->price)
+    if(order1->price != order2->price) {
         return (order1->price > order2->price);
+    }
     return (order1->orderTime < order2->orderTime);
 }
 
@@ -66,11 +68,10 @@ void OrderBook::match( std::shared_ptr<Order>& order) {
 
 void OrderBook::makeTrade( std::shared_ptr<Order>& buyerOrder, std::shared_ptr<Order>& sellerOrder, int price, int quantity) {
     std::cout << "TRADE " << buyerOrder->sInstrument << " " << sellerOrder->orderId << " " << buyerOrder->orderId << " " << quantity << " " << price << std::endl;
-    Trade *trade = new Trade("TRADE", buyerOrder->sInstrument, buyerOrder->orderId, sellerOrder->orderId, quantity, price);
+    std::shared_ptr <Trade> trade(new Trade("TRADE", buyerOrder->sInstrument, buyerOrder->orderId, sellerOrder->orderId, quantity, price));
     buyerOrder->quantity -= quantity;
     sellerOrder->quantity -= quantity;
     tradeList.push_back(trade);
-    delete trade;
 }
 
 void OrderBook::printRemaining() {
@@ -82,13 +83,13 @@ void OrderBook::printRemaining() {
     if (isEmpty()) {
         std::cout << "Order book is empty.";
     }
-    for (auto s : sellList) {
+    for (const auto &s : sellList) {
         if (s->quantity != 0) {
             std::cout << s->orderId << " " << s->sSide << " " << s->sInstrument << " " << s->quantity << " " << s->price
                << std::endl;
         }
     }
-    for (auto b : buyList) {
+    for (const auto &b : buyList) {
         if (b->quantity != 0) {
             std::cout << b->orderId << " " << b->sSide << " " << b->sInstrument << " " << b->quantity << " " << b->price
                << std::endl;
@@ -102,13 +103,13 @@ std::ostream& operator<<(std::ostream& os, const OrderBook& book) {
         return os;
     }
     os << std::endl;
-    for (auto s : book.sellList) {
+    for (const auto &s : book.sellList) {
         if (s->quantity != 0) {
             os << s->orderId << " " << s->sSide << " " << s->sInstrument << " " << s->quantity << " " << s->price
                << std::endl;
         }
     }
-    for (auto b : book.buyList) {
+    for (const auto &b : book.buyList) {
         if (b->quantity != 0) {
             os << b->orderId << " " << b->sSide << " " << b->sInstrument << " " << b->quantity << " " << b->price
                << std::endl;
