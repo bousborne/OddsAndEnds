@@ -3,6 +3,9 @@
 ## Quick Glance
 
 ***./run.sh*** will compile everything and run the match engine using input.txt as the input.
+You can also pipe info into the run.sh script like so:
+
+***cat sample_input.txt | ./run.sh***
 
 ***./test.sh*** will compile everything and run just the tests through the build/match_engine_tests binary
 
@@ -50,6 +53,7 @@ When trying to match an order, it will loop through all orders currently in the 
 It will make comparisons on the price, as well as make sure it is the same "instrument".
 If there is a match, the quantities of both sides will be updated, then the current order will be placed in its'
 respective vector list if there is still some quantity left.
+That list will then be sorted based on a comparator function on price and time.
 Being placed at the end takes care of the time precedent.
 At a match, a trade will be emitted.
 When everything is processed (either the file is at the end, or user types "exit"), then the sell and buy vector contents

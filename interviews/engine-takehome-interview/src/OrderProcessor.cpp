@@ -20,9 +20,9 @@ void OrderProcessor::processOrder(std::shared_ptr<Order>& order) {
     orderBook->match(order);
     if (matchQty > 0) {
         if(isBuy(order)) {
-            orderBook->add_buy(order);
+            orderBook->addBuy(order);
         } else {
-            orderBook->add_sell(order);
+            orderBook->addSell(order);
         }
     }
 }
@@ -35,7 +35,10 @@ int OrderProcessor::run(const std::string &filename) {
         std::istringstream split(line);
         std::vector <std::string> tokens;
 
-        time_t order_time = time(nullptr);
+        if(line == "exit") {
+            break;
+        }
+        auto order_time = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
         if (!line.empty()) {
             for (std::string each; std::getline(split, each, split_char); tokens.push_back(each)); //NOLINT
         }
@@ -61,7 +64,8 @@ int OrderProcessor::run(const std::string &filename) {
             processOrder(order);
         }
     }
-    std::cout << *orderBook << std::endl;
+    orderBook->printRemaining();
+//    std::cout << *orderBook << std::endl;
     return 0;
 }
 

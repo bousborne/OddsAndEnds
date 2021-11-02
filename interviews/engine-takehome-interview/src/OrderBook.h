@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <algorithm>
 #include "Order.h"
 #include "Trade.h"
 
@@ -25,12 +26,17 @@ public:
     OrderBook() {};
     template<typename T> bool isBuy(T x);
     void add(std::shared_ptr<Order>& order, bool buy);
-    bool is_empty() const;
-    void add_buy(std::shared_ptr<Order>& order);
-    void add_sell(std::shared_ptr<Order>& order);
+    bool isEmpty() const;
+    static bool sellSortCompare(const std::shared_ptr<Order>& order1, const std::shared_ptr<Order>& order2) ;
+    static bool buySortCompare(const std::shared_ptr<Order>& order1, const std::shared_ptr<Order>& order2);
+    static bool timeSortCompare(const std::shared_ptr<Order>& order1, const std::shared_ptr<Order>& order2);
+    void addBuy(std::shared_ptr<Order>& order);
+    void addSell(std::shared_ptr<Order>& order);
     void match(std::shared_ptr<Order>& order);
     void makeTrade( std::shared_ptr<Order>& buyerOrder, std::shared_ptr<Order>& sellerOrder, int price, int quantity);
+    void printRemaining();
 
+    // This friend function is used for testing
     friend std::ostream& operator<<(std::ostream& os, const OrderBook& orderBook);
 };
 

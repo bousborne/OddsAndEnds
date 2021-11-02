@@ -7,10 +7,18 @@
 #include <stdio.h>
 #include <fstream>
 #include <memory>
+#include <chrono>
+#include <sys/time.h>
+#include <ctime>
 
 #include "OrderBook.h"
 #include "Order.h"
 #include "Trade.h"
+
+using std::chrono::duration_cast;
+using std::chrono::milliseconds;
+using std::chrono::seconds;
+using std::chrono::system_clock;
 
 class OrderProcessor
 {
@@ -23,10 +31,6 @@ public:
     {
         orderBook = new OrderBook();
     };
-//    ~OrderProcessor()
-//    {
-//        delete orderBook;
-//    };
     virtual ~OrderProcessor() {clean();}
     template<typename T> bool isNumber(T x);
     template<typename T> bool isBuy(T x);
