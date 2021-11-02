@@ -2,12 +2,11 @@
 #include <iostream>
 #include <string>
 
-
 int main(int argc, char *argv[]) {
     std::cerr << "====== Match Engine =====" << std::endl;
     std::string filename;
     OrderProcessor orderProc;
-    if(argc >= 2) {
+    if (argc >= 2) {
         filename = argv[1]; // NOLINT
     }
     std::cerr << "Enter 'exit' to quit" << std::endl;

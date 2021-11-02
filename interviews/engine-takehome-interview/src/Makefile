@@ -17,7 +17,7 @@ VALGRINDFLAGS=--leak-check=full \
 %.o: %.c
 	$(CC) $(CFLAGS) -o $@ -c $<
 
-#.PHONY: build
+#.PHONY : build
 build: build_match_engine
 build_match_engine: ## Kicks off a build
 	mkdir -p build

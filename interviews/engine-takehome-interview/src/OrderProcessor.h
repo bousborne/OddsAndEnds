@@ -1,18 +1,18 @@
 #ifndef ENGINE_TAKEHOME_INTERVIEW_ORDERPROCESSOR_H
 #define ENGINE_TAKEHOME_INTERVIEW_ORDERPROCESSOR_H
-#include <iostream>
-#include <sstream>
-#include <string>
-#include <regex>
-#include <stdio.h>
-#include <fstream>
-#include <memory>
 #include <chrono>
-#include <sys/time.h>
 #include <ctime>
+#include <fstream>
+#include <iostream>
+#include <memory>
+#include <regex>
+#include <sstream>
+#include <stdio.h>
+#include <string>
+#include <sys/time.h>
 
-#include "OrderBook.h"
 #include "Order.h"
+#include "OrderBook.h"
 #include "Trade.h"
 
 #define TOKEN_SIZE 5
@@ -22,24 +22,25 @@ using std::chrono::milliseconds;
 using std::chrono::seconds;
 using std::chrono::system_clock;
 
-class OrderProcessor
-{
+class OrderProcessor {
 private:
-    OrderBook* orderBook;
+    OrderBook *orderBook;
 
 public:
     std::ifstream inFile;
-    OrderProcessor()
-    {
+    OrderProcessor() {
         orderBook = new OrderBook();
     };
-    virtual ~OrderProcessor() {clean();}
-    template<typename T> bool isNumber(T x);
-    template<typename T> bool isBuy(T x);
-    void processOrder( std::shared_ptr<Order>& order );
+    virtual ~OrderProcessor() {
+        clean();
+    }
+    template <typename T> bool isNumber(T x);
+    template <typename T> bool isBuy(T x);
+    void processOrder(std::shared_ptr<Order> &order);
     int run(const std::string &filename);
-    void clean() { delete orderBook; }
-
+    void clean() {
+        delete orderBook;
+    }
 };
 
-#endif //ENGINE_TAKEHOME_INTERVIEW_ORDERPROCESSOR_H
+#endif // ENGINE_TAKEHOME_INTERVIEW_ORDERPROCESSOR_H
