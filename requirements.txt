@@ -1,0 +1,9 @@
+selenium
+mutagen
+requests
+bs4
+pillow
+yt_dlp
+eyed3
+ffmpeg
+beautifulsoup4
