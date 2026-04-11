@@ -28,13 +28,10 @@ from dataclasses import dataclass
 from typing import Optional
 
 from selenium import webdriver
-from selenium.common.exceptions import (
-    NoSuchElementException,
-    TimeoutException,
-    WebDriverException,
-)
+from selenium.common.exceptions import TimeoutException, WebDriverException
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support import expected_conditions as EC
@@ -59,8 +56,8 @@ log = logging.getLogger("login_check")
 
 @dataclass
 class LoginResult:
-    status: str           # "OK" | "FAILED"
-    detail: str           # human-readable explanation
+    status: str       # "OK" | "FAILED"
+    detail: str       # human-readable explanation
     final_url: str = ""
 
     def __str__(self) -> str:
@@ -71,60 +68,8 @@ class LoginResult:
 
 
 # ---------------------------------------------------------------------------
-# Field auto-detection heuristics
+# Shadow DOM JavaScript helpers
 # ---------------------------------------------------------------------------
-
-# Ordered lists of CSS selectors to probe, most-specific first.
-_USERNAME_CANDIDATES = [
-    "input[type='email']",
-    "input[name='email']",
-    "input[id='email']",
-    "input[name='username']",
-    "input[id='username']",
-    "input[name='user']",
-    "input[id='user']",
-    "input[name='login']",
-    "input[id='login']",
-    "input[autocomplete='username']",
-    "input[autocomplete='email']",
-    # Broad fallback: first visible text input
-    "input[type='text']",
-]
-
-_PASSWORD_CANDIDATES = [
-    "input[type='password']",
-    "input[name='password']",
-    "input[id='password']",
-    "input[name='pass']",
-    "input[id='pass']",
-    "input[autocomplete='current-password']",
-]
-
-_SUBMIT_CANDIDATES = [
-    "button[type='submit']",
-    "input[type='submit']",
-    "button[name='submit']",
-    "button[name='login']",
-    # Buttons whose visible text contains login-like words
-]
-
-_SUBMIT_TEXT_KEYWORDS = ("log in", "login", "sign in", "signin", "submit", "continue")
-
-
-_DEEP_QUERY_JS = """
-    function deepQuery(root, sel) {
-        let el = root.querySelector(sel);
-        if (el) return el;
-        for (const node of root.querySelectorAll('*')) {
-            if (node.shadowRoot) {
-                el = deepQuery(node.shadowRoot, sel);
-                if (el) return el;
-            }
-        }
-        return null;
-    }
-    return deepQuery(document, arguments[0]);
-"""
 
 _DEEP_QUERY_ALL_JS = """
     function deepQueryAll(root, sel, results) {
@@ -138,29 +83,70 @@ _DEEP_QUERY_ALL_JS = """
 """
 
 
+# ---------------------------------------------------------------------------
+# Field auto-detection heuristics
+# ---------------------------------------------------------------------------
+
+_USERNAME_CANDIDATES = [
+    "input[type='email']",
+    "input[name='email']",
+    "input[id='email']",
+    "input[name='username']",
+    "input[id='username']",
+    "input[autocomplete*='username']",
+    "input[autocomplete*='email']",
+    "input[autocomplete='username']",
+    "input[autocomplete='email']",
+    "input[name='user']",
+    "input[id='user']",
+    "input[name='login']",
+    "input[id='login']",
+    "input[type='text']",
+]
+
+_PASSWORD_CANDIDATES = [
+    "input[type='password']",
+    "input[name='password']",
+    "input[id='password']",
+    "input[autocomplete='current-password']",
+    "input[name='pass']",
+    "input[id='pass']",
+]
+
+_SUBMIT_CANDIDATES = [
+    "button[type='submit']",
+    "input[type='submit']",
+    "button[name='submit']",
+    "button[name='login']",
+    "[role='button'][aria-label*='Log']",
+    "[role='button'][aria-label*='Sign']",
+    "[role='button'][aria-label*='Continue']",
+]
+
+_SUBMIT_TEXT_KEYWORDS = ("log in", "login", "sign in", "signin", "submit", "continue")
+
+
 def _find_first_visible(driver: webdriver.Chrome, selectors: list[str]) -> Optional[WebElement]:
     """
-    Return the first visible element matching any selector in the list.
-    Falls back to a recursive shadow DOM pierce if the standard DOM lookup misses it.
+    Return the first visible element matching any selector.
+    Tries standard DOM first, then recurses into shadow roots.
     """
     for sel in selectors:
         # 1. Standard DOM (fast path)
         try:
-            elements = driver.find_elements(By.CSS_SELECTOR, sel)
-            for el in elements:
+            for el in driver.find_elements(By.CSS_SELECTOR, sel):
                 if el.is_displayed() and el.is_enabled():
-                    log.debug("  Matched selector (DOM): %s", sel)
+                    log.debug("  Matched (DOM): %s", sel)
                     return el
         except Exception:
             pass
 
         # 2. Shadow DOM deep pierce (slow path)
         try:
-            elements = driver.execute_script(_DEEP_QUERY_ALL_JS, sel)
-            for el in (elements or []):
+            for el in (driver.execute_script(_DEEP_QUERY_ALL_JS, sel) or []):
                 try:
                     if el.is_displayed() and el.is_enabled():
-                        log.debug("  Matched selector (shadow DOM): %s", sel)
+                        log.debug("  Matched (shadow DOM): %s", sel)
                         return el
                 except Exception:
                     continue
@@ -175,22 +161,20 @@ def _find_submit_button(driver: webdriver.Chrome, explicit_sel: Optional[str]) -
     if explicit_sel:
         return _find_first_visible(driver, [explicit_sel])
 
-    # Try structural selectors first
     el = _find_first_visible(driver, _SUBMIT_CANDIDATES)
     if el:
         return el
 
-    # Fallback: any <button> or <input[type=button]> whose text hints at login
+    # Fallback: match by visible button text
     for tag in ("button", "input[type='button']", "a"):
         try:
-            candidates = driver.execute_script(_DEEP_QUERY_ALL_JS, tag) or []
-            for c in candidates:
+            for c in (driver.execute_script(_DEEP_QUERY_ALL_JS, tag) or []):
                 try:
                     if not c.is_displayed():
                         continue
                     text = (c.text or c.get_attribute("value") or "").lower()
                     if any(kw in text for kw in _SUBMIT_TEXT_KEYWORDS):
-                        log.debug("  Matched submit by text (shadow DOM): '%s'", text.strip())
+                        log.debug("  Matched submit by text: '%s'", text.strip())
                         return c
                 except Exception:
                     continue
@@ -198,6 +182,40 @@ def _find_submit_button(driver: webdriver.Chrome, explicit_sel: Optional[str]) -
             continue
 
     return None
+
+
+def _click_element(driver: webdriver.Chrome, el: WebElement) -> None:
+    """
+    Click an element using multiple fallback strategies.
+    Handles web components that swallow native Selenium clicks.
+    """
+    # 1. Native Selenium click
+    try:
+        el.click()
+        return
+    except Exception:
+        pass
+
+    # 2. JavaScript .click()
+    try:
+        driver.execute_script("arguments[0].click()", el)
+        return
+    except Exception:
+        pass
+
+    # 3. Dispatch a real MouseEvent
+    try:
+        driver.execute_script("""
+            arguments[0].dispatchEvent(
+                new MouseEvent('click', {bubbles: true, cancelable: true})
+            )
+        """, el)
+        return
+    except Exception:
+        pass
+
+    # 4. ActionChains as last resort
+    ActionChains(driver).move_to_element(el).click().perform()
 
 
 # ---------------------------------------------------------------------------
@@ -209,22 +227,19 @@ def _check_success(driver: webdriver.Chrome, indicator: str, pre_login_url: str)
     Determine whether the login succeeded.
 
     indicator formats:
-      url:/some/path   — post-login URL must contain the given fragment
-      url:*            — any URL change counts as success
-      #css-selector    — an element matching the selector must exist post-login
-      (empty)          — fall back to URL-change heuristic
+      url:/some/path  — post-login URL must contain the fragment
+      url:*           — any URL change counts as success
+      #css-selector   — element must be present after login
+      (empty)         — URL-change heuristic
     """
     current_url = driver.current_url
 
     if not indicator or indicator == "url:*":
-        # Heuristic: URL changed and we're not on an obvious error page
         return current_url != pre_login_url
 
     if indicator.startswith("url:"):
-        fragment = indicator[4:]
-        return fragment in current_url
+        return indicator[4:] in current_url
 
-    # Treat as CSS selector
     try:
         elements = driver.find_elements(By.CSS_SELECTOR, indicator)
         return any(el.is_displayed() for el in elements)
@@ -244,13 +259,12 @@ def build_driver(headless: bool) -> webdriver.Chrome:
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-gpu")
     options.add_argument("--window-size=1280,900")
-    # Suppress "Chrome is being controlled by automated software" bar noise
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
     options.add_experimental_option("useAutomationExtension", False)
 
     service = Service(ChromeDriverManager().install())
     driver = webdriver.Chrome(service=service, options=options)
-    driver.implicitly_wait(0)  # We use explicit waits throughout
+    driver.implicitly_wait(0)
     return driver
 
 
@@ -258,12 +272,12 @@ def attempt_login(
     url: str,
     username: str,
     password: str,
-    user_sel: Optional[str],
-    pass_sel: Optional[str],
-    submit_sel: Optional[str],
-    success_indicator: str,
-    timeout: int,
-    headless: bool,
+    user_sel: Optional[str] = None,
+    pass_sel: Optional[str] = None,
+    submit_sel: Optional[str] = None,
+    success_indicator: str = "",
+    timeout: int = 15,
+    headless: bool = False,
 ) -> LoginResult:
 
     driver = build_driver(headless)
@@ -273,27 +287,33 @@ def attempt_login(
         log.info("Navigating to %s", url)
         driver.get(url)
 
-        # Wait for the page body to be ready
         wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+
+        # Wait until a known input field is present in the DOM (including shadow DOM)
+        log.info("Waiting for login form to hydrate …")
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            el = _find_first_visible(driver, _USERNAME_CANDIDATES)
+            if el:
+                break
+            time.sleep(0.3)
+
         pre_login_url = driver.current_url
         log.info("Page loaded: %s", pre_login_url)
 
-        # pdb.set_trace()
-        # --- Locate username field ---
+        # --- Locate fields ---
         log.info("Locating username field …")
         user_field = _find_first_visible(driver, [user_sel] if user_sel else _USERNAME_CANDIDATES)
         if not user_field:
             return LoginResult("FAILED", "Could not locate a username/email input field")
         log.info("  ✓ Username field found")
 
-        # --- Locate password field ---
         log.info("Locating password field …")
         pass_field = _find_first_visible(driver, [pass_sel] if pass_sel else _PASSWORD_CANDIDATES)
         if not pass_field:
             return LoginResult("FAILED", "Could not locate a password input field")
         log.info("  ✓ Password field found")
 
-        # --- Locate submit button ---
         log.info("Locating submit button …")
         submit_btn = _find_submit_button(driver, submit_sel)
         if not submit_btn:
@@ -303,40 +323,47 @@ def attempt_login(
         # --- Fill credentials ---
         user_field.clear()
         user_field.send_keys(username)
-        time.sleep(0.1)          # tiny pause mimics human typing cadence
+        time.sleep(0.1)
 
         pass_field.clear()
         pass_field.send_keys(password)
         time.sleep(0.1)
-        
-        
+
+        # --- Submit ---
         # --- Submit ---
         log.info("Submitting login form …")
+        _click_element(driver, submit_btn)
 
-        # submit_btn.click()
-        
-        # driver.execute_script("arguments[0].click()", submit_btn)
+        # Poll for any sign the page has responded
+        def login_complete(d):
+            # 1. URL changed
+            if d.current_url != pre_login_url:
+                return True
+            # 2. An error message appeared
+            error_selectors = [
+                "[role='alert']",
+                ".error",
+                "[class*='error']",
+                "[class*='invalid']",
+                "[aria-invalid='true']",
+            ]
+            for sel in error_selectors:
+                try:
+                    els = d.find_elements(By.CSS_SELECTOR, sel)
+                    if any(e.is_displayed() for e in els):
+                        return True
+                except Exception:
+                    pass
+            return False
 
-
-        driver.execute_script("""
-        arguments[0].dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true}))
-        """, submit_btn)
-        
-        # from selenium.webdriver.common.action_chains import ActionChains
-        # ActionChains(driver).move_to_element(submit_btn).click().perform()
-
-        # Wait for navigation / DOM update
-        time.sleep(1.5)
         try:
-            wait.until(lambda d: d.current_url != pre_login_url or
-                       EC.presence_of_element_located((By.TAG_NAME, "body"))(d))
+            wait.until(login_complete)
         except TimeoutException:
-            pass  # Page may not redirect; check indicator anyway
+            log.warning("Timed out waiting for post-login response")
 
         post_url = driver.current_url
         log.info("Post-login URL: %s", post_url)
 
-        # --- Evaluate result ---
         if _check_success(driver, success_indicator, pre_login_url):
             return LoginResult("OK", "Login succeeded", final_url=post_url)
         else:
@@ -361,31 +388,15 @@ def parse_args() -> argparse.Namespace:
         epilog=__doc__,
     )
     p.add_argument("--url",        required=True,  help="Full URL of the login page")
-    p.add_argument("--username",   required=True,  help="Username or email to log in with")
-    p.add_argument("--password",   required=True,  help="Password to use")
-
-    p.add_argument("--user-field", default=None,
-                   help="CSS selector for the username input (auto-detected if omitted)")
-    p.add_argument("--pass-field", default=None,
-                   help="CSS selector for the password input (auto-detected if omitted)")
-    p.add_argument("--submit",     default=None,
-                   help="CSS selector for the submit button (auto-detected if omitted)")
-    p.add_argument("--success",    default="",
-                   help=(
-                       "How to detect a successful login. Options:\n"
-                       "  url:/some/path  — post-login URL contains this fragment\n"
-                       "  url:*           — any URL change counts\n"
-                       "  #css-selector   — element must exist after login\n"
-                       "  (empty)         — URL-change heuristic (default)"
-                   ))
-
-    p.add_argument("--timeout",    type=int, default=15,
-                   help="Seconds to wait for elements/navigation (default: 15)")
-    p.add_argument("--headless", action="store_true",
-                   help="Run Chrome headlessly with no visible window")
-    p.add_argument("--verbose", "-v", action="store_true",
-                   help="Enable debug-level logging")
-
+    p.add_argument("--username",   required=True,  help="Username or email")
+    p.add_argument("--password",   required=True,  help="Password")
+    p.add_argument("--user-field", default=None,   help="CSS selector for username input (auto-detected if omitted)")
+    p.add_argument("--pass-field", default=None,   help="CSS selector for password input (auto-detected if omitted)")
+    p.add_argument("--submit",     default=None,   help="CSS selector for submit button (auto-detected if omitted)")
+    p.add_argument("--success",    default="",     help="Success indicator: url:/path, url:*, CSS selector, or empty for URL-change heuristic")
+    p.add_argument("--timeout",    type=int, default=15, help="Wait timeout in seconds (default: 15)")
+    p.add_argument("--headless",   action="store_true",  help="Run Chrome headlessly (no visible window)")
+    p.add_argument("--verbose", "-v", action="store_true", help="Enable debug logging")
     return p.parse_args()
 
 
