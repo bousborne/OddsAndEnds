@@ -319,11 +319,26 @@ class BackupScanner:
             pass
 
     def connect_db(self):
+        import tempfile
         try:
-            self.conn = sqlite3.connect(str(self.manifest_db))
+            # SQLite cannot open databases over NFS/SMB — copy to temp first
+            tmp = tempfile.NamedTemporaryFile(suffix=".db", delete=False)
+            self._tmp_db_path = tmp.name
+            tmp.close()
+            print(info("⟳  Copying Manifest.db to temp location for SQLite access..."))
+            shutil.copy2(str(self.manifest_db), self._tmp_db_path)
+            for ext in ["-wal", "-shm"]:
+                src = Path(str(self.manifest_db) + ext)
+                if src.exists():
+                    shutil.copy2(str(src), self._tmp_db_path + ext)
+            self.conn = sqlite3.connect(self._tmp_db_path)
             self.conn.row_factory = sqlite3.Row
+            print(ok("✓  Manifest.db ready\n"))
         except sqlite3.Error as e:
             print(err(f"✗ Could not open Manifest.db: {e}"))
+            sys.exit(1)
+        except Exception as e:
+            print(err(f"✗ Could not copy Manifest.db: {e}"))
             sys.exit(1)
 
     def load_all_files(self):
@@ -647,11 +662,15 @@ def main():
     print(bold(c(C.CYAN, "═" * 52)))
     print(bold(c(C.WHITE, "  Extraction Complete")))
     print(c(C.CYAN, "─" * 52))
-    print(f"  {ok(f'✓ Files copied:   {grand_total[\"copied\"]:,}')}")
-    print(f"  {warn(f'↷ Files skipped:  {grand_total[\"skipped\"]:,}')} (already existed)")
-    print(f"  {dim(f'? Files missing:  {grand_total[\"missing\"]:,}')} (iCloud-only)")
-    if grand_total["errors"]:
-        print(f"  {err(f'✗ Errors:         {grand_total[\"errors\"]:,}')}")
+    copied_n  = grand_total["copied"]
+    skipped_n = grand_total["skipped"]
+    missing_n = grand_total["missing"]
+    errors_n  = grand_total["errors"]
+    print(f"  {ok(f'✓ Files copied:   {copied_n:,}')}")
+    print(f"  {warn(f'↷ Files skipped:  {skipped_n:,}')} (already existed)")
+    print(f"  {dim(f'? Files missing:  {missing_n:,}')} (iCloud-only)")
+    if errors_n:
+        print(f"  {err(f'✗ Errors:         {errors_n:,}')}")
     print(f"  {dim(f'⏱ Time elapsed:   {elapsed.seconds}s')}")
     print(f"  {dim(f'📁 Output:         {dest_path}')}")
     print(bold(c(C.CYAN, "═" * 52)))
