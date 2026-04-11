@@ -111,17 +111,62 @@ _SUBMIT_CANDIDATES = [
 _SUBMIT_TEXT_KEYWORDS = ("log in", "login", "sign in", "signin", "submit", "continue")
 
 
+_DEEP_QUERY_JS = """
+    function deepQuery(root, sel) {
+        let el = root.querySelector(sel);
+        if (el) return el;
+        for (const node of root.querySelectorAll('*')) {
+            if (node.shadowRoot) {
+                el = deepQuery(node.shadowRoot, sel);
+                if (el) return el;
+            }
+        }
+        return null;
+    }
+    return deepQuery(document, arguments[0]);
+"""
+
+_DEEP_QUERY_ALL_JS = """
+    function deepQueryAll(root, sel, results) {
+        root.querySelectorAll(sel).forEach(el => results.push(el));
+        for (const node of root.querySelectorAll('*')) {
+            if (node.shadowRoot) deepQueryAll(node.shadowRoot, sel, results);
+        }
+        return results;
+    }
+    return deepQueryAll(document, arguments[0], []);
+"""
+
+
 def _find_first_visible(driver: webdriver.Chrome, selectors: list[str]) -> Optional[WebElement]:
-    """Return the first visible element matching any selector in the list."""
+    """
+    Return the first visible element matching any selector in the list.
+    Falls back to a recursive shadow DOM pierce if the standard DOM lookup misses it.
+    """
     for sel in selectors:
+        # 1. Standard DOM (fast path)
         try:
             elements = driver.find_elements(By.CSS_SELECTOR, sel)
             for el in elements:
                 if el.is_displayed() and el.is_enabled():
-                    log.debug("  Matched selector: %s", sel)
+                    log.debug("  Matched selector (DOM): %s", sel)
                     return el
         except Exception:
+            pass
+
+        # 2. Shadow DOM deep pierce (slow path)
+        try:
+            elements = driver.execute_script(_DEEP_QUERY_ALL_JS, sel)
+            for el in (elements or []):
+                try:
+                    if el.is_displayed() and el.is_enabled():
+                        log.debug("  Matched selector (shadow DOM): %s", sel)
+                        return el
+                except Exception:
+                    continue
+        except Exception:
             continue
+
     return None
 
 
@@ -138,14 +183,17 @@ def _find_submit_button(driver: webdriver.Chrome, explicit_sel: Optional[str]) -
     # Fallback: any <button> or <input[type=button]> whose text hints at login
     for tag in ("button", "input[type='button']", "a"):
         try:
-            candidates = driver.find_elements(By.CSS_SELECTOR, tag)
+            candidates = driver.execute_script(_DEEP_QUERY_ALL_JS, tag) or []
             for c in candidates:
-                if not c.is_displayed():
+                try:
+                    if not c.is_displayed():
+                        continue
+                    text = (c.text or c.get_attribute("value") or "").lower()
+                    if any(kw in text for kw in _SUBMIT_TEXT_KEYWORDS):
+                        log.debug("  Matched submit by text (shadow DOM): '%s'", text.strip())
+                        return c
+                except Exception:
                     continue
-                text = (c.text or c.get_attribute("value") or "").lower()
-                if any(kw in text for kw in _SUBMIT_TEXT_KEYWORDS):
-                    log.debug("  Matched submit by text: '%s'", text.strip())
-                    return c
         except Exception:
             continue
 
@@ -230,7 +278,6 @@ def attempt_login(
         pre_login_url = driver.current_url
         log.info("Page loaded: %s", pre_login_url)
 
-        pdb.set_trace()
         # --- Locate username field ---
         log.info("Locating username field …")
         user_field = _find_first_visible(driver, [user_sel] if user_sel else _USERNAME_CANDIDATES)
@@ -260,10 +307,22 @@ def attempt_login(
         pass_field.clear()
         pass_field.send_keys(password)
         time.sleep(0.1)
-
+        
+        
         # --- Submit ---
         log.info("Submitting login form …")
-        submit_btn.click()
+
+        # submit_btn.click()
+        
+        # driver.execute_script("arguments[0].click()", submit_btn)
+
+
+        driver.execute_script("""
+        arguments[0].dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true}))
+        """, submit_btn)
+        
+        # from selenium.webdriver.common.action_chains import ActionChains
+        # ActionChains(driver).move_to_element(submit_btn).click().perform()
 
         # Wait for navigation / DOM update
         time.sleep(1.5)
@@ -321,8 +380,8 @@ def parse_args() -> argparse.Namespace:
 
     p.add_argument("--timeout",    type=int, default=15,
                    help="Seconds to wait for elements/navigation (default: 15)")
-    p.add_argument("--no-headless", action="store_false",
-                   help="Run Chrome in a visible window (useful for debugging)")
+    p.add_argument("--headless", action="store_true",
+                   help="Run Chrome headlessly with no visible window")
     p.add_argument("--verbose", "-v", action="store_true",
                    help="Enable debug-level logging")
 
@@ -349,7 +408,7 @@ def main() -> None:
         submit_sel=args.submit,
         success_indicator=args.success,
         timeout=args.timeout,
-        headless=not args.no_headless,
+        headless=args.headless,
     )
 
     log.info("=" * 55)
