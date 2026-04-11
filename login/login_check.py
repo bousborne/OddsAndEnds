@@ -278,6 +278,7 @@ def attempt_login(
         pre_login_url = driver.current_url
         log.info("Page loaded: %s", pre_login_url)
 
+        # pdb.set_trace()
         # --- Locate username field ---
         log.info("Locating username field …")
         user_field = _find_first_visible(driver, [user_sel] if user_sel else _USERNAME_CANDIDATES)

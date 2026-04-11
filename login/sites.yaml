@@ -1,0 +1,29 @@
+sites:
+  - name: Reddit
+    url: https://reddit.com/login/
+    logins:
+      - username: asdfasdf@hotmail.com
+        password: asdfasdf
+      - username: asdfasdfas
+        password: asdfasdf
+
+  - name: Imgur
+    url: https://imgur.com/login
+    success: url:/dashboard
+    logins:
+      - username: asdfasdf@gmail.com
+        password: asdfasdfas
+
+  - name: Tumblr
+    url: https://tumblr.com/login
+    success: url:/dashboard
+    logins:
+      - username: asdfasf@gmail.com
+        password: asdfsadf
+
+  - name: 9Gag
+    url: https://9gag.com/login
+    success: url:/
+    logins:
+      - username: asdf@gmail.com
+        password: asdfasdfasd
